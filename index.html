@@ -1,25 +1,277 @@
 <!DOCTYPE html>
-<html>
-  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-  <!-- we import arjs version without NFT but with marker + location based support -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  <body style="margin : 0px; overflow: hidden;">
-    <a-scene embedded arjs>
-      <a-marker preset="hiro">
-        <!-- we use cors proxy to avoid cross-origin problems -->
-        <!--
-          ⚠️⚠️⚠️
-          https://arjs-cors-proxy.herokuapp.com/ is now offline, Heroku has dismissed all his free plans from November 2022.
-          You need to host your own proxy and use it instead. The proxy is based on CORS Anywhere (see https://github.com/Rob--W/cors-anywhere).
-          ⚠️⚠️⚠️
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Video Player</title>
+    <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 999;
+            max-width: 300px;
+        }
+        
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,0,0,0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading screen -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <p>Cargando AR...</p>
+        <small>Permite el acceso a la cámara cuando se solicite</small>
+    </div>
+    
+    <!-- Error message -->
+    <div id="error">
+        <h3>Error</h3>
+        <p id="error-message"></p>
+        <button onclick="location.reload()">Reintentar</button>
+    </div>
+    
+    <!-- Instructions -->
+    <div id="instructions">
+        <h3>📱 Instrucciones</h3>
+        <p>1. Permite el acceso a la cámara</p>
+        <p>2. Apunta la cámara hacia la imagen marcador</p>
+        <p>3. Mantén la imagen en el centro del encuadre</p>
+        <p>4. El video aparecerá sobre la imagen</p>
+    </div>
+
+    <!-- A-Frame AR Scene -->
+    <a-scene
+        vr-mode-ui="enabled: false"
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        renderer="logarithmicDepthBuffer: true;"
+        embedded
+        gesture-detector
+        id="scene">
+        
+        <!-- Assets -->
+        <a-assets>
+            <!-- Reemplaza esta URL con la URL de tu video -->
+            <video 
+                id="video" 
+                src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                preload="auto" 
+                loop="true" 
+                muted="true"
+                crossorigin="anonymous"
+                playsinline
+                webkit-playsinline>
+            </video>
+        </a-assets>
+
+        <!-- Marcador NFT -->
+        <!-- 
+        IMPORTANTE: Reemplaza 'tu-marcador' con el nombre de tus archivos NFT
+        (sin extensión, solo el nombre base)
+        Ejemplo: si tienes marker.fset, marker.fset3, marker.iset
+        entonces usa: a-nft type='nft' url='./path/to/marker'
         -->
-        <a-entity
-          position="0 0 0"
-          scale="0.05 0.05 0.05"
-          gltf-model="https://arjs-cors-proxy.herokuapp.com/https://raw.githack.com/AR-js-org/AR.js/master/aframe/examples/image-tracking/nft/trex/scene.gltf"
-        ></a-entity>
-      </a-marker>
-      <a-entity camera></a-entity>
+        <a-nft 
+            type="nft" 
+            url="./img"
+            smooth="true" 
+            smoothCount="10" 
+            smoothTolerance=".01" 
+            smoothThreshold="5"
+            id="nft-marker">
+            
+            <!-- Plano de video que aparece sobre el marcador -->
+            <a-video
+                src="#video"
+                position="0 0.1 0"
+                rotation="-90 0 0"
+                width="1"
+                height="0.75"
+                opacity="0.9"
+                id="ar-video">
+            </a-video>
+            
+            <!-- Marco decorativo opcional -->
+            <a-box
+                position="0 0.05 0"
+                rotation="-90 0 0"
+                width="1.1"
+                height="0.85"
+                depth="0.02"
+                color="#ffffff"
+                opacity="0.3">
+            </a-box>
+        </a-nft>
+
+        <!-- Cámara AR -->
+        <a-entity camera></a-entity>
     </a-scene>
-  </body>
+
+    <script>
+        // Variables globales
+        let scene;
+        let marker;
+        let video;
+        let isVideoPlaying = false;
+        
+        // Inicializar cuando la página carga
+        window.addEventListener('load', function() {
+            init();
+        });
+        
+        function init() {
+            scene = document.querySelector('#scene');
+            marker = document.querySelector('#nft-marker');
+            video = document.querySelector('#video');
+            
+            // Eventos del marcador
+            if (marker) {
+                marker.addEventListener('markerFound', onMarkerFound);
+                marker.addEventListener('markerLost', onMarkerLost);
+            }
+            
+            // Eventos de la escena
+            if (scene) {
+                scene.addEventListener('arjs-nft-loaded', onNFTLoaded);
+                scene.addEventListener('camera-init', onCameraInit);
+                scene.addEventListener('camera-error', onCameraError);
+            }
+            
+            // Preparar video
+            if (video) {
+                video.addEventListener('loadeddata', onVideoLoaded);
+                video.addEventListener('error', onVideoError);
+            }
+        }
+        
+        function onCameraInit() {
+            console.log('Cámara inicializada');
+            hideLoading();
+        }
+        
+        function onCameraError(error) {
+            console.error('Error de cámara:', error);
+            showError('No se pudo acceder a la cámara. Verifica los permisos.');
+        }
+        
+        function onNFTLoaded() {
+            console.log('NFT marcador cargado');
+            hideLoading();
+        }
+        
+        function onVideoLoaded() {
+            console.log('Video cargado y listo');
+        }
+        
+        function onVideoError(error) {
+            console.error('Error al cargar video:', error);
+            showError('Error al cargar el video. Verifica la URL.');
+        }
+        
+        function onMarkerFound() {
+            console.log('Marcador encontrado');
+            if (video && !isVideoPlaying) {
+                video.play().then(() => {
+                    isVideoPlaying = true;
+                    console.log('Video reproduciendo');
+                }).catch(error => {
+                    console.error('Error al reproducir video:', error);
+                });
+            }
+        }
+        
+        function onMarkerLost() {
+            console.log('Marcador perdido');
+            if (video && isVideoPlaying) {
+                video.pause();
+                isVideoPlaying = false;
+                console.log('Video pausado');
+            }
+        }
+        
+        function hideLoading() {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.display = 'none';
+            }
+        }
+        
+        function showError(message) {
+            hideLoading();
+            const errorDiv = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            if (errorDiv && errorMessage) {
+                errorMessage.textContent = message;
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        // Manejo de errores globales
+        window.addEventListener('error', function(e) {
+            console.error('Error global:', e);
+        });
+        
+        // Detectar si es dispositivo móvil para optimizaciones
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        if (isMobile()) {
+            console.log('Dispositivo móvil detectado');
+            // Agregar orientación de pantalla
+            screen.orientation?.lock?.('portrait').catch(e => console.log('No se pudo bloquear orientación'));
+        }
+    </script>
+</body>
 </html>
